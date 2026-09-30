@@ -17,8 +17,8 @@ sync — the reference eval (`evals/test_hooks.py`) is the behaviour contract fo
   python3 -m py_compile plugins/platform-guardrails/hooks/*.py
   ```
 - On any **behaviour change**, bump `plugins/platform-guardrails/.claude-plugin/plugin.json`
-  `version` so `claude plugin update` picks it up. Optionally tag a release with
-  `claude plugin tag`.
+  `version` **and add a `CHANGELOG.md` entry** so `claude plugin update` picks it up and the
+  change is recorded. Optionally tag a release with `claude plugin tag`.
 
 ## Hooks discipline
 Hooks must **fail-open** (a parse error → exit 0, never wedge the agent) and use narrow,
