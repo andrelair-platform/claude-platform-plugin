@@ -23,12 +23,18 @@ What it blocks + why (each maps to an existing rule):
   6. `git add … CLAUDE.md` — CLAUDE.md must NEVER be committed (feedback_claude_md_repo_rule).
 """
 import json
+import os
 import re
 import sys
 
+# When run as the `platform-guardrails` plugin, Claude Code sets CLAUDE_PLUGIN_ROOT → name the
+# plugin in the block message; otherwise this is the repo's committed .claude/hooks/ copy.
+_SOURCE = ("plugin: platform-guardrails (guard-bash.py)"
+           if os.environ.get("CLAUDE_PLUGIN_ROOT") else ".claude/hooks/guard-bash.py")
+
 
 def block(msg: str) -> None:
-    sys.stderr.write("BLOCKED by .claude/hooks/guard-bash.py\n" + msg + "\n")
+    sys.stderr.write(f"BLOCKED by {_SOURCE}\n" + msg + "\n")
     sys.exit(2)
 
 

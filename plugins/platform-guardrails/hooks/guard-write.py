@@ -18,8 +18,14 @@ What it blocks + why:
      CLAUDE.md outside this repo is unaffected.)
 """
 import json
+import os
 import re
 import sys
+
+# When run as the `platform-guardrails` plugin, Claude Code sets CLAUDE_PLUGIN_ROOT → name the
+# plugin in the block message; otherwise this is the repo's committed .claude/hooks/ copy.
+_SOURCE = ("plugin: platform-guardrails (guard-write.py)"
+           if os.environ.get("CLAUDE_PLUGIN_ROOT") else ".claude/hooks/guard-write.py")
 
 SECRET_PATTERNS = [
     (re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----"), "a PRIVATE KEY"),
@@ -36,7 +42,7 @@ PATH_GIT = re.compile(r"(^|/)\.git/")
 
 
 def block(msg: str) -> None:
-    sys.stderr.write("BLOCKED by .claude/hooks/guard-write.py\n" + msg + "\n")
+    sys.stderr.write(f"BLOCKED by {_SOURCE}\n" + msg + "\n")
     sys.exit(2)
 
 

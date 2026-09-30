@@ -2,9 +2,15 @@
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "platform-guardrails",
   "description": "AI-native SDLC guardrails for the ktayl/minicloud platform: deterministic Bash/Write hooks, policy Skills, a PR-review + intent-capture command, and verifier/researcher subagents.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "AndreLiar"
   },
-  "keywords": ["hooks", "guardrails", "sdlc", "gitops", "security"]
+  "keywords": [
+    "hooks",
+    "guardrails",
+    "sdlc",
+    "gitops",
+    "security"
+  ]
 }
