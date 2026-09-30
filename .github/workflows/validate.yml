@@ -1,0 +1,43 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate manifests + compile hooks
+        run: |
+          python3 - <<'PY'
+          import glob, json, py_compile, sys
+          problems = []
+          m = json.load(open('.claude-plugin/marketplace.json'))
+          for k in ('name', 'plugins'):
+              if k not in m:
+                  problems.append(f'marketplace.json missing {k}')
+          plugins = glob.glob('plugins/*/.claude-plugin/plugin.json')
+          if not plugins:
+              problems.append('no plugin.json found')
+          for pj in plugins:
+              d = json.load(open(pj))
+              if not d.get('name'):
+                  problems.append(f'{pj} missing name')
+          for hj in glob.glob('plugins/*/hooks/hooks.json'):
+              json.load(open(hj))  # must be valid JSON
+          for h in glob.glob('plugins/*/hooks/*.py'):
+              try:
+                  py_compile.compile(h, doraise=True)
+              except py_compile.PyCompileError as exc:
+                  problems.append(f'{h}: {exc}')
+          if problems:
+              print('PROBLEMS:'); [print('  -', p) for p in problems]; sys.exit(1)
+          print(f'OK: {len(plugins)} plugin(s), manifests valid, hooks compile')
+          PY
