@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "andrelair-platform",
+  "description": "ktayl/minicloud platform — AI-native SDLC guardrails, policy skills, commands and subagents, distributed once and applied across every repo.",
+  "owner": {
+    "name": "AndreLiar"
+  },
+  "plugins": [
+    {
+      "name": "platform-guardrails",
+      "description": "Deterministic client-side guardrails (Bash/Write/Edit hooks), policy Skills (secure-api-review, wrapper-chart-onboarding, prod-promotion-qa-gate), a PR-review + intent-capture command, and verifier/researcher subagents for the ktayl/minicloud platform.",
+      "author": {
+        "name": "AndreLiar"
+      },
+      "category": "workflow",
+      "source": "./plugins/platform-guardrails"
+    }
+  ]
+}

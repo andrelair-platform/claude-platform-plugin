@@ -1,0 +1,27 @@
+{
+  "description": "Deterministic client-side guardrails (fail-open): refuse dangerous Bash (rm -rf of a root, force-push to main/master, manual `argocd app sync/rollback/patch/set`, `kubectl delete namespace`, `curl|sh`, `git add CLAUDE.md`), refuse writing secret material / vendored helm charts/ / in-repo CLAUDE.md, and run an advisory plain-YAML syntax check after edits.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-bash.py\"" }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-write.py\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-yaml.py\"" }
+        ]
+      }
+    ]
+  }
+}
