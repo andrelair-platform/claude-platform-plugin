@@ -68,7 +68,34 @@ other machine.
 claude plugin update platform-guardrails      # pull the latest (restart to apply)
 claude plugin disable platform-guardrails     # temporarily off
 claude plugin uninstall platform-guardrails   # remove
+claude plugin prune                           # drop stale cached versions (e.g. an old 1.0.1 dir)
 ```
+
+## Releasing a plugin change (add/edit a skill, hook, command) — the 4 steps
+
+**The gotcha this prevents:** installed plugins load from a **version-pinned cache**
+(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`). Merging to `main` is **not** enough —
+if `plugin.json`'s `version` didn't bump, or the local cache wasn't updated, your sessions keep loading
+the **old** skills/hooks. Always:
+
+```bash
+# 1. In the PR that adds/edits the skill|hook|command, BUMP the version:
+#    plugins/platform-guardrails/.claude-plugin/plugin.json  "version": "1.3.0" -> "1.4.0"
+#    (and mirror the artifact into minicloud-gitops/.claude/ — the source of truth, see below)
+
+# 2. After it merges to main, refresh the marketplace from GitHub:
+claude plugin marketplace update andrelair-platform
+
+# 3. Update the installed plugin to the new version:
+claude plugin update platform-guardrails@andrelair-platform    # --scope user (default)
+
+# 4. RESTART Claude Code — the running session holds the OLD version in memory until you relaunch.
+```
+
+Verify after restart: the new skills appear in the session's available-skills list, and
+`claude plugin list` shows the bumped version. Project-scoped skills
+(`minicloud-gitops/.claude/skills/`) load **live** from the repo clone and need none of this — only the
+**plugin** (user-scope, every-project) delivery goes through the cache.
 
 ## Architecture — how it's distributed
 
