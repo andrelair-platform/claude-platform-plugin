@@ -16,6 +16,11 @@ What it blocks + why:
   4. Creating a `CLAUDE.md` inside this repo — it must NEVER be committed
      (feedback_claude_md_repo_rule). (Hooks are project-scoped, so the workspace-root
      CLAUDE.md outside this repo is unaffected.)
+  5. Naming a container build file `Containerfile` — the house convention is always
+     `Dockerfile` (conventions.md, "Container image file naming").
+  6. Writing the string `HDI` into a platform/ktayl artefact — HDI is the owner's REAL
+     employer; ktayl is the fictional stand-in (feedback_never_name_hdi_in_artefacts). Use
+     "a regulated European insurer" / "enterprise". The private hdi-missions memory is exempt.
 """
 import json
 import os
@@ -39,6 +44,9 @@ SECRET_PATTERNS = [
 
 PATH_CHARTS = re.compile(r"/helm/charts/")
 PATH_GIT = re.compile(r"(^|/)\.git/")
+# HDI as a standalone uppercase token (the real employer). Case-sensitive to avoid matching
+# "hdi" buried in hashes/identifiers; also catches the explicit "HDI Global".
+HDI_TOKEN = re.compile(r"\bHDI\b")
 
 
 def block(msg: str) -> None:
@@ -75,7 +83,15 @@ def main() -> None:
             block("CLAUDE.md must NEVER live in a committed repo "
                   "(feedback_claude_md_repo_rule). Put durable context in "
                   ".claude/rules/*.md, AGENTS.md, or the memory system instead.")
+        if path.rstrip("/").split("/")[-1] == "Containerfile":
+            block("Name the container build file `Dockerfile`, never `Containerfile` "
+                  "(conventions.md). Identical syntax; Dockerfile is the universal default.")
         text = incoming_text(ti)
+        base = path.rstrip("/").split("/")[-1].lower()
+        if HDI_TOKEN.search(text) and "hdi" not in base:
+            block("Do not name 'HDI' in a platform/ktayl artefact "
+                  "(feedback_never_name_hdi_in_artefacts) — it is the owner's real employer. "
+                  "Use 'a regulated European insurer' / 'enterprise'; ktayl is the stand-in.")
         for pat, label in SECRET_PATTERNS:
             if pat.search(text):
                 block(f"Refusing to write {label} into a file. Secrets go to Vault "
