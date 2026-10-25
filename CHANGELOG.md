@@ -4,6 +4,24 @@ All notable changes to the **platform-guardrails** plugin are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com); this plugin uses
 [Semantic Versioning](https://semver.org). The version is `plugins/platform-guardrails/.claude-plugin/plugin.json`.
 
+## [1.4.0] - 2026-10-25
+
+### Added
+- **4 new deterministic Bash guards** (`guard-bash`): refuse a **local `kubectl` with no
+  `--context`** (default context is `myAKSCluster`; `ssh controller` is exempt), **`base64 -d` of
+  `MINICLOUD_CA_CERT`** (raw PEM), an **AI-attribution trailer** in a `git commit` / `gh pr|issue`
+  body (`Co-Authored-By` / "Generated with Claude Code"), and an **in-place `sed -i` on a YAML file**
+  (corrupts flow-style / Kargo-promoted values).
+- **2 new deterministic Write guards** (`guard-write`): refuse creating a **`Containerfile`** (house
+  convention is `Dockerfile`), and writing the **real-employer token** into a platform/ktayl artefact
+  (the hdi-missions memory path is exempt).
+- **4 new Skills**: `wire-vault-secret` (Vault → ESO → pod, incl. the SSA `ignoreDifferences` gotcha +
+  `ghcr-pull`), `authentik-app-onboarding` (native OIDC + M2M client-credentials), `cilium-netpol`
+  (the kube-apiserver-identity gotcha + 504 selector-mismatch), `kargo-warehouse-wiring` (image vs git
+  model + the NewestBuild monotonic-timestamp trap).
+- **`evals/test_hooks.py`** — a deterministic 30-case exit-code harness for both guards
+  (the `verifier` subagent's `python3 evals/test_hooks.py`). All 30 green.
+
 ## [1.0.1] - 2026-09-30
 
 ### Fixed

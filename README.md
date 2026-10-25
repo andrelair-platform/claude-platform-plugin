@@ -29,10 +29,11 @@
 
 | Component | Count | Names |
 |---|---|---|
-| **Hooks** | 2 (Pre/Post) | `guard-bash`, `guard-write`, `validate-yaml` |
-| **Skills** | 3 | `secure-api-review`, `wrapper-chart-onboarding`, `prod-promotion-qa-gate` |
+| **Hooks** | 3 (Pre/Pre/Post) | `guard-bash` (10 rules), `guard-write` (6 rules), `validate-yaml` (advisory) |
+| **Skills** | 18 | `secure-api-review`, `wrapper-chart-onboarding`, `prod-promotion-qa-gate`, `standardize-new-repo`, `test-pyramid-setup`, `longhorn-incident-recovery`, `cnpg-migration`, `generate-schema-erd`, `offsite-dr-backup`, `run-game-day`, `wire-llmops`, `github-board-ops`, `public-sso-app-forwardauth`, `make-architecture-diagram`, `wire-vault-secret`, `authentik-app-onboarding`, `cilium-netpol`, `kargo-warehouse-wiring` |
 | **Commands** | 2 | `/review-pr`, `/capture-intent` |
 | **Subagents** | 2 | `verifier`, `researcher` |
+| **Evals** | 1 | `evals/test_hooks.py` (30 cases, both guards) |
 
 ## Install
 
@@ -50,13 +51,17 @@ other machine.
 
 ## Components
 
-- **Hooks (deterministic, fail-open):** refuse `rm -rf` of a root, force-push to `main/master`,
-  manual `argocd app sync/rollback/patch/set`, `kubectl delete namespace`, `curl|sh`, and
-  `git add CLAUDE.md`; refuse writing secret material / vendored `helm/charts/` / an in-repo
-  `CLAUDE.md`; run an advisory plain-YAML syntax check after edits. First-token dispatch → near
-  zero false positives; a hook bug can never wedge the agent.
-- **Skills (triggered):** `secure-api-review` (endpoints/APIs), `wrapper-chart-onboarding`
-  (a new service / helm chart), `prod-promotion-qa-gate` (before a prod PR).
+- **Hooks (deterministic, fail-open):** `guard-bash` refuses `rm -rf` of a root, force-push to
+  `main/master`, manual `argocd app sync/rollback/patch/set`, `kubectl delete namespace`,
+  `curl|sh`, `git add CLAUDE.md`, a **local `kubectl` with no `--context`**, **`base64 -d` of
+  `MINICLOUD_CA_CERT`**, an **AI-attribution trailer** in a `git commit`/`gh pr` body, and an
+  **in-place `sed -i` on YAML**. `guard-write` refuses secret material, vendored `helm/charts/`,
+  an in-repo `CLAUDE.md`, a **`Containerfile`**, and the **real-employer token** in an artefact.
+  `validate-yaml` is an advisory post-edit check. First-token dispatch → near-zero false positives;
+  a hook bug can never wedge the agent; `evals/test_hooks.py` pins the behaviour (30 cases).
+- **Skills (triggered):** 18 policy skills spanning API security, the GAP wrapper-chart golden path,
+  prod promotion + Kargo wiring, Longhorn/CNPG/DR recovery, secrets (Vault→ESO), Authentik SSO/M2M,
+  Cilium netpols, ERDs, LLMOps, game days, boards and diagrams.
 - **Commands:** `/review-pr [PR#]` (on-plan severity-tagged review vs the platform policy),
   `/capture-intent "<idea>"` (draft a committed `intent/<slug>.md`).
 - **Subagents:** `verifier` (runs the change + evals/curl, report-only), `researcher`

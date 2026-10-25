@@ -21,6 +21,17 @@ What it blocks + why (each maps to an existing rule):
   4. `kubectl delete namespace|ns` — dropping a namespace is catastrophic.
   5. piping a network fetch straight into a shell (`curl … | sh`) — supply-chain.
   6. `git add … CLAUDE.md` — CLAUDE.md must NEVER be committed (feedback_claude_md_repo_rule).
+  7. a LOCAL `kubectl` with no `--context` — the Mac's default context is `myAKSCluster`,
+     so an unqualified kubectl silently targets the wrong cluster (connectivity.md). Fires
+     only on a local invocation (a `ssh controller "kubectl …"` has the right context) and
+     exempts cluster-agnostic subcommands (config/version/completion/options/help).
+  8. `base64 -d` applied to `MINICLOUD_CA_CERT` — it is raw PEM; decoding corrupts the CA
+     ("MINICLOUD_CA_CERT is raw PEM — NEVER base64 -d it", connectivity.md / ci-registry.md).
+  9. an AI-attribution trailer in a `git commit` / `gh pr|issue` body — `Co-Authored-By` or a
+     "Generated with Claude Code" line is forbidden on the owner's portfolio work
+     (feedback_no_claude_code_attribution, git-commit-rules).
+ 10. an in-place `sed -i` on a YAML file — BSD `sed -i ''` corrupts flow-style / Kargo-promoted
+     values (gitops.md). Edit YAML with the Edit tool, in block style.
 """
 import json
 import os
@@ -60,13 +71,26 @@ ARGOCD_MUT = re.compile(r"^argocd\s+app\s+(sync|rollback|patch|set)\b")
 KUBECTL_NS_DEL = re.compile(r"^kubectl\b.*\bdelete\b.*\b(namespace|ns)\b")
 CURL_PIPE_SH = re.compile(r"\b(?:curl|wget)\b[^|]*\|\s*(?:sudo\s+)?(?:bash|sh|zsh)\b")
 GIT_ADD_CLAUDEMD = re.compile(r"^git\s+add\b.*\bCLAUDE\.md\b")
+# a local kubectl is safe only if it carries --context, or is a cluster-agnostic subcommand.
+KUBECTL_CTX_EXEMPT = re.compile(r"(?:^|\s)(?:config|version|completion|options|-h|--help)\b")
+# base64 decode in any of its spellings: -d, -D (BSD), --decode.
+BASE64_DECODE = re.compile(r"\bbase64\b\s+(?:-{1,2}\w*[dD]\w*|--decode)\b")
+# AI-attribution trailers that must never appear on the owner's portfolio work.
+ATTRIBUTION = re.compile(
+    r"Co-Authored-By|Co-authored-by|Generated with (?:\[)?Claude Code|🤖 Generated with")
+GH_AUTHORED = re.compile(r"^gh\s+(?:pr|issue)\s+(?:create|comment|edit)\b")
+# an in-place sed (GNU `-i` or BSD `-i ''`) that rewrites a .yaml/.yml file.
+SED_INPLACE_YAML = re.compile(r"\bsed\b.*\s-i\b.*\.ya?ml(?:\s|$)")
 
 
 def check(cmd: str) -> None:
-    # whole-command pattern (spans a pipe)
+    # whole-command patterns (span a pipe)
     if CURL_PIPE_SH.search(cmd):
         block("Piping a network fetch into a shell is forbidden (supply-chain). "
               "Download, inspect, then run.")
+    if "MINICLOUD_CA_CERT" in cmd and BASE64_DECODE.search(cmd):
+        block("MINICLOUD_CA_CERT is raw PEM — NEVER `base64 -d` it (connectivity.md). "
+              "Use the value verbatim (e.g. write it straight to a .crt).")
 
     for first, seg in segments(cmd):
         if first == "rm" and DANGEROUS_RM_TARGET.search(seg):
@@ -79,6 +103,20 @@ def check(cmd: str) -> None:
             if GIT_ADD_CLAUDEMD.search(seg):
                 block("CLAUDE.md must NEVER be committed to a repo "
                       "(feedback_claude_md_repo_rule). Do not stage it.")
+            if re.match(r"^git\s+commit\b", seg) and ATTRIBUTION.search(seg):
+                block("No AI-attribution trailer on commits — remove the `Co-Authored-By` / "
+                      "'Generated with Claude Code' line (feedback_no_claude_code_attribution). "
+                      "Commits represent the owner's portfolio work.")
+        if first == "gh" and GH_AUTHORED.search(seg) and ATTRIBUTION.search(seg):
+            block("No AI-attribution line in a PR/issue body — remove the `Co-Authored-By` / "
+                  "'Generated with Claude Code' text (feedback_no_claude_code_attribution).")
+        if first == "sed" and SED_INPLACE_YAML.search(seg):
+            block("Never edit YAML in place with `sed -i` — BSD `sed -i ''` corrupts flow-style / "
+                  "Kargo-promoted values (gitops.md). Use the Edit tool, in block style.")
+        if first == "kubectl" and "--context" not in seg and not KUBECTL_CTX_EXEMPT.search(seg):
+            block("Local kubectl has no --context → it targets the default `myAKSCluster`, not "
+                  "the platform (connectivity.md). Add `--context minicloud` (or run it over "
+                  "`ssh controller`, whose context is already correct).")
         if first == "argocd" and ARGOCD_MUT.search(seg):
             block("Manual ArgoCD mutation is refused. Prod moves via a CODEOWNERS PR that "
                   "Kargo opens → ArgoCD auto-syncs (gitops.md). If this is the documented "
