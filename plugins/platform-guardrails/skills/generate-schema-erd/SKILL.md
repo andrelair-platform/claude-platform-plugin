@@ -54,7 +54,8 @@ or duplicate the ERD into a per-repo `website/` (a build-time copy is the only s
 
 ## Adopted / vendor DB (no in-repo migrations)
 Generate from the **live** DB with `minicloud-ops/scripts/db-erd/generate-erd.sh` (port-forward + tbls,
-creds from the k8s secret at runtime). The SSO'd **Adminer** cockpit is the Day-2 browse/operate counterpart.
+creds from the k8s secret at runtime). The local **DBeaver** cockpit (`minicloud-ops/scripts/db/` +
+`developer-platform/dbeaver-db-access`) is the Day-2 browse/operate counterpart.
 
 ## The dbt / warehouse carve-out — do NOT force tbls
 A dbt warehouse (derived medallion models, not a migration-owned schema) uses **committed model contracts
